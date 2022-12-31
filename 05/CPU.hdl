@@ -39,6 +39,9 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
+    //I swear the bit order is wrong on this one ._. for registers 0 meant most significant bit, in here it seems to consider 0 the least significant bit
+
+
     // If C instruction and 13th bit, load into Memory[A]
     And(a=instruction[15], b=instruction[3], out=writeM);
     // If C instruction, and 11th bit set, load into A
