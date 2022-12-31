@@ -39,7 +39,37 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
-    ..
-    .
+    // If C instruction and 13th bit, load into Memory[A]
+    And(a=instruction[15], b=instruction[3], out=writeM);
+    // If C instruction, and 11th bit set, load into A
+    // Or if A instruction
+    Not(in=instruction[15], out=A);
+    And(a=instruction[15], b=instruction[5], out=LA);
+    Or(a=A, b=LA, out=la);
+    //Sends register into address, or internal use
+    Mux16(a=instruction, b=AluOut, sel=instruction[15], out=AIn);
+    ARegister(in=AIn, load=la, out=AReg, out[0..14]=addressM);
+    // If C instruction and 12th bit, load D
+    And(a=instruction[15], b=instruction[4], out=D);
+    DRegister(in=AluOut, load=D, out=alux);
+    // If C and 4th bit, load Mem[A] instead of A
+    And(a=instruction[15], b=instruction[12], out=MA);
+    Mux16(a=AReg, b=inM, sel=MA, out=aluy);
+    ALU(x=alux, y=aluy, zx=instruction[11], nx=instruction[10], zy=instruction[9], ny=instruction[8], f=instruction[7], no=instruction[6], out=AluOut, out=outM, zr=zeroed, ng=negative);
+    Not(in=zeroed, out=notzeroed);
+    Not(in=negative, out=notneg);
+    // JGT and value matches
+    And(a=notzeroed, b=notneg, out=positive);
+    And(a=instruction[15], b=instruction[0], out=JGT);
+    And(a=positive, b=JGT, out=PJ);
+    // JEQ
+    And(a=instruction[15], b=instruction[1], out=JEQ);
+    And(a=JEQ, b=zeroed, out=EJ);
+    // JLT and matches
+    And(a=instruction[15], b=instruction[2], out=JLT);
+    And(a=JLT, b=negative, out=NJ);
+    Or(a=PJ, b=EJ, out=or1);
+    Or(a=NJ, b=or1, out=jump);
+    DMux(in=true, sel=jump, a=increment, b=jload);
+    PC(in=AReg, load=jload, inc=increment, reset=reset, out[0..14]=pc);
 }
